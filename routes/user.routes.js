@@ -3,10 +3,9 @@ const router = express.Router();
 
 const signupusercheck= require('../middlewares/signupcheck');
 
-const {signupuser} = require('../controllers/userController');
-const {loginuser} = require('../controllers/userController');
+const usercontroller = require('../controllers/userController');
 
-router.post('/signup', signupusercheck, signupuser);
-router.post('/login', loginuser);
+router.post('/signup', signupusercheck, usercontroller.signupuser);
+router.post('/login', usercontroller.loginuser);
 
 module.exports= router;
