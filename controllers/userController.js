@@ -2,22 +2,23 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const secretkey= process.env.SECRET_KEY;
-const user= require('../model/users');
+const secretkey = process.env.SECRET_KEY;
+const user = require('../model/users');
 
 /**
  - Function to  create a new user in the database.
     - body {@param Object}
     - @returns  {Promise<Object>} returns a promise
 */
-const signupuser= async (req, res) =>{
+const signupuser = async (req, res) => {
   try {
-    const {username, useremail, userphone, userpass}= req.body;
-    const existinguser= await user.findOne({
-      email: useremail, phonenumber: userphone,
+    const {username, useremail, userphone, userpass} = req.body;
+    const existinguser = await user.findOne({
+      email: useremail,
+      phonenumber: userphone,
     });
-    const emailuse= await user.findOne({email: useremail});
-    const phonenumberuse= await user.findOne({phonenumber: userphone});
+    const emailuse = await user.findOne({email: useremail});
+    const phonenumberuse = await user.findOne({phonenumber: userphone});
     if (existinguser) {
       return res.status(201).json({
         success: false,
@@ -35,7 +36,7 @@ const signupuser= async (req, res) =>{
       });
     } else {
       const bcryptpassword = await bcrypt.hash(userpass, 10);
-      const newUser= new user({
+      const newUser = new user({
         name: username,
         email: useremail,
         phonenumber: userphone,
@@ -43,8 +44,15 @@ const signupuser= async (req, res) =>{
       });
       const suc = await newUser.save();
       if (suc) {
-        const token = jwt.sign({userid: newUser._id, email: newUser.email},
-            secretkey, {expiresIn: '1h'});
+        const token = jwt.sign(
+            {
+              userid: newUser._id,
+              email: newUser.email,
+              type: newUser.type,
+            },
+            secretkey,
+            {expiresIn: '1h'},
+        );
         return res.status(201).json({
           success: true,
           message: 'user succesfully signed up',
@@ -65,21 +73,25 @@ const signupuser= async (req, res) =>{
     - body {@param Object}
     - @returns  {Promise<Object>} returns a promise
 */
-const loginuser= async (req, res) =>{
+const loginuser = async (req, res) => {
   try {
-    const {useremail, userpass}= req.body;
-    const existinguser= await user.findOne({email: useremail});
+    const {useremail, userpass} = req.body;
+    const existinguser = await user.findOne({email: useremail});
     if (existinguser) {
       bcrypt.compare(userpass, existinguser.password, function(err, result) {
         if (err) {
           console.log(err);
           throw err;
         } else if (result) {
-          const token = jwt.sign({
-            userid: existinguser._id, email: existinguser.email},
-          secretkey,
-          {expiresIn: '1h',
-          });
+          const token = jwt.sign(
+              {
+                userid: existinguser._id,
+                email: existinguser.email,
+                type: existinguser.type,
+              },
+              secretkey,
+              {expiresIn: '1h'},
+          );
           res.status(201).json({
             success: true,
             message: 'login is successful',
@@ -103,8 +115,7 @@ const loginuser= async (req, res) =>{
   }
 };
 
-module.exports={
+module.exports = {
   loginuser,
   signupuser,
 };
-
