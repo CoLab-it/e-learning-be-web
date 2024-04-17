@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 
 const secretkey = process.env.SECRET_KEY;
 const user = require('../model/users');
+const course = require('../model/courses');
 
 /**
  - Function to  create a new user in the database.
@@ -115,7 +116,13 @@ const loginuser = async (req, res) => {
   }
 };
 
+const getCourse = async (req, res)=>{
+  const courses = await course.find();
+  res.json({courses});
+};
+
 module.exports = {
   loginuser,
   signupuser,
+  getCourse,
 };
