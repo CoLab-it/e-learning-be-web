@@ -3,12 +3,14 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const cors = require('cors');
 const userroutes= require('./routes/user.routes');
+const instructorRoutes = require('./routes/instructor.routes');
 const port = process.env.PORT || 3000;
 const DB_CONNECTION=process.env.DB_CONNECTION;
 const app = express();
 app.use(express.json());
 app.use(cors());
 app.use('/user', userroutes);
+app.use('/instructor', instructorRoutes);
 
 mongoose.connect(DB_CONNECTION)
     .then(()=>{
