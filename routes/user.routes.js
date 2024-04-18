@@ -9,5 +9,6 @@ router.post('/signup', signupusercheck, user.signupuser);
 router.post('/login', user.loginuser);
 
 router.get('/getCourses', tokenCheck, user.getCourse);
+router.get('/getSingleCourse/:courseId', tokenCheck, user.getCourseDetails);
 
 module.exports= router;

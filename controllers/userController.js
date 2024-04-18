@@ -3,8 +3,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 const secretkey = process.env.SECRET_KEY;
-const user = require('../model/users');
-const course = require('../model/courses');
+const User = require('../model/users');
+const Course = require('../model/courses');
 
 /**
  - Function to  create a new user in the database.
@@ -14,12 +14,12 @@ const course = require('../model/courses');
 const signupuser = async (req, res) => {
   try {
     const {username, useremail, userphone, userpass} = req.body;
-    const existinguser = await user.findOne({
+    const existinguser = await User.findOne({
       email: useremail,
       phonenumber: userphone,
     });
-    const emailuse = await user.findOne({email: useremail});
-    const phonenumberuse = await user.findOne({phonenumber: userphone});
+    const emailuse = await User.findOne({email: useremail});
+    const phonenumberuse = await User.findOne({phonenumber: userphone});
     if (existinguser) {
       return res.status(201).json({
         success: false,
@@ -73,7 +73,7 @@ const signupuser = async (req, res) => {
 const loginuser = async (req, res) => {
   try {
     const {useremail, userpass} = req.body;
-    const existinguser = await user.findOne({email: useremail});
+    const existinguser = await User.findOne({email: useremail});
     if (existinguser) {
       bcrypt.compare(userpass, existinguser.password, function(err, result) {
         if (err) {
@@ -113,12 +113,19 @@ const loginuser = async (req, res) => {
 };
 
 const getCourse = async (req, res) => {
-  const courses = await course.find();
+  const courses = await Course.find();
   res.json({courses});
+};
+
+const getCourseDetails = async (req, res)=>{
+  const id= req.params.courseId;
+  const course = await Course.findById(id);
+  res.json({course});
 };
 
 module.exports = {
   loginuser,
   signupuser,
   getCourse,
+  getCourseDetails,
 };
