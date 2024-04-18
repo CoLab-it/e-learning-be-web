@@ -45,8 +45,11 @@ const signupuser = async (req, res) => {
       });
       const suc = await newUser.save();
       if (suc) {
-        const token = jwt.sign({userid: newUser._id, email: newUser.email},
-            secretkey, {expiresIn: '1h'});
+        const token = jwt.sign(
+            {userid: newUser._id, email: newUser.email, type: newUser.type},
+            secretkey,
+            {expiresIn: '1h'},
+        );
         return res.status(201).json({
           success: true,
           message: 'user succesfully signed up',
@@ -77,11 +80,15 @@ const loginuser = async (req, res) => {
           console.log(err);
           throw err;
         } else if (result) {
-          const token = jwt.sign({
-            userid: existinguser._id, email: existinguser.email},
-          secretkey,
-          {expiresIn: '1h',
-          });
+          const token = jwt.sign(
+              {
+                userid: existinguser._id,
+                email: existinguser.email,
+                type: existinguser.type,
+              },
+              secretkey,
+              {expiresIn: '1h'},
+          );
           res.status(201).json({
             success: true,
             message: 'login is successful',
@@ -105,7 +112,7 @@ const loginuser = async (req, res) => {
   }
 };
 
-const getCourse = async (req, res)=>{
+const getCourse = async (req, res) => {
   const courses = await course.find();
   res.json({courses});
 };
