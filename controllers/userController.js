@@ -43,8 +43,12 @@ const signupuser= async (req, res) =>{
       });
       const suc = await newUser.save();
       if (suc) {
-        const token = jwt.sign({userid: newUser._id, email: newUser.email},
-            secretkey, {expiresIn: '1h'});
+        const token = jwt.sign({
+          userid: newUser._id,
+          email: newUser.email,
+          type: 'user',
+        },
+        secretkey, {expiresIn: '1h'});
         return res.status(201).json({
           success: true,
           message: 'user succesfully signed up',
@@ -76,7 +80,10 @@ const loginuser= async (req, res) =>{
           throw err;
         } else if (result) {
           const token = jwt.sign({
-            userid: existinguser._id, email: existinguser.email},
+            userid: existinguser._id,
+            email: existinguser.email,
+            type: 'user',
+          },
           secretkey,
           {expiresIn: '1h',
           });
