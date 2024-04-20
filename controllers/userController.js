@@ -1,10 +1,12 @@
 /* eslint-disable valid-jsdoc */
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 
 const secretkey = process.env.SECRET_KEY;
-const user = require('../model/users');
-const course = require('../model/courses');
+const User = require('../model/users');
+const Course = require('../model/courses');
+const userProfile = require('../model/userProfile');
 
 /**
  - Function to  create a new user in the database.
@@ -14,12 +16,12 @@ const course = require('../model/courses');
 const signupuser = async (req, res) => {
   try {
     const {username, useremail, userphone, userpass} = req.body;
-    const existinguser = await user.findOne({
+    const existinguser = await User.findOne({
       email: useremail,
       phonenumber: userphone,
     });
-    const emailuse = await user.findOne({email: useremail});
-    const phonenumberuse = await user.findOne({phonenumber: userphone});
+    const emailuse = await User.findOne({email: useremail});
+    const phonenumberuse = await User.findOne({phonenumber: userphone});
     if (existinguser) {
       return res.status(201).json({
         success: false,
@@ -37,7 +39,7 @@ const signupuser = async (req, res) => {
       });
     } else {
       const bcryptpassword = await bcrypt.hash(userpass, 10);
-      const newUser = new user({
+      const newUser = new User({
         name: username,
         email: useremail,
         phonenumber: userphone,
@@ -45,8 +47,11 @@ const signupuser = async (req, res) => {
       });
       const suc = await newUser.save();
       if (suc) {
-        const token = jwt.sign({userid: newUser._id, email: newUser.email},
-            secretkey, {expiresIn: '1h'});
+        const token = jwt.sign(
+            {userid: newUser._id, email: newUser.email, type: newUser.type},
+            secretkey,
+            {expiresIn: '1d'},
+        );
         return res.status(201).json({
           success: true,
           message: 'user succesfully signed up',
@@ -70,18 +75,22 @@ const signupuser = async (req, res) => {
 const loginuser = async (req, res) => {
   try {
     const {useremail, userpass} = req.body;
-    const existinguser = await user.findOne({email: useremail});
+    const existinguser = await User.findOne({email: useremail});
     if (existinguser) {
       bcrypt.compare(userpass, existinguser.password, function(err, result) {
         if (err) {
           console.log(err);
           throw err;
         } else if (result) {
-          const token = jwt.sign({
-            userid: existinguser._id, email: existinguser.email},
-          secretkey,
-          {expiresIn: '1h',
-          });
+          const token = jwt.sign(
+              {
+                userid: existinguser._id,
+                email: existinguser.email,
+                type: existinguser.type,
+              },
+              secretkey,
+              {expiresIn: '1d'},
+          );
           res.status(201).json({
             success: true,
             message: 'login is successful',
@@ -105,13 +114,70 @@ const loginuser = async (req, res) => {
   }
 };
 
-const getCourse = async (req, res)=>{
-  const courses = await course.find();
+const getCourse = async (req, res) => {
+  const courses = await Course.find();
   res.json({courses});
+};
+
+const getCourseDetails = async (req, res) => {
+  const id = req.params.courseId;
+  const course = await Course.findById(id);
+  res.json({course});
+};
+
+const getUserProfile = async (req, res) => {
+  const id = new mongoose.Types.ObjectId(req.token.userid);
+  const user = await User.aggregate([
+    {$match: {_id: id}},
+    {
+      $lookup: {
+        from: 'userprofiles',
+        localField: '_id',
+        foreignField: 'userId',
+        as: 'userProfile',
+      },
+    },
+  ]);
+  res.json({user});
+};
+
+const saveUserProfile = async (req, res) => {
+  try {
+    const userId = req.token.userid;
+    console.log(req.body);
+    const {username, email, number, address} = req.body;
+
+    await User.updateOne(
+        {_id: userId},
+        {$set: {name: username, email, phonenumber: number}},
+        {upsert: true},
+    );
+
+    const userProfileExists = await userProfile.exists({userId});
+
+    if (userProfileExists) {
+      await userProfile.updateOne({userId}, {$set: {address}});
+    } else {
+      new userProfile({
+        userId,
+        address,
+      }).save();
+    }
+
+    res.status(200).json({message: 'User profile saved successfully.'});
+  } catch (error) {
+    console.error('Error saving user profile:', error);
+    res
+        .status(500)
+        .json({message: 'Error saving user profile. Please try again later.'});
+  }
 };
 
 module.exports = {
   loginuser,
   signupuser,
   getCourse,
+  getCourseDetails,
+  saveUserProfile,
+  getUserProfile,
 };
