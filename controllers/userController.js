@@ -39,7 +39,7 @@ const signupuser = async (req, res) => {
       });
     } else {
       const bcryptpassword = await bcrypt.hash(userpass, 10);
-      const newUser = new user({
+      const newUser = new User({
         name: username,
         email: useremail,
         phonenumber: userphone,
@@ -50,7 +50,7 @@ const signupuser = async (req, res) => {
         const token = jwt.sign(
             {userid: newUser._id, email: newUser.email, type: newUser.type},
             secretkey,
-            {expiresIn: '1h'},
+            {expiresIn: '1d'},
         );
         return res.status(201).json({
           success: true,
@@ -89,7 +89,7 @@ const loginuser = async (req, res) => {
                 type: existinguser.type,
               },
               secretkey,
-              {expiresIn: '1h'},
+              {expiresIn: '1d'},
           );
           res.status(201).json({
             success: true,
@@ -149,14 +149,14 @@ const saveUserProfile = async (req, res) => {
 
     await User.updateOne(
         {_id: userId},
-        {$set: {name: username, email}},
+        {$set: {name: username, email, phonenumber: number}},
         {upsert: true},
     );
 
     const userProfileExists = await userProfile.exists({userId});
 
     if (userProfileExists) {
-      await userProfile.updateOne({userId}, {$set: {number, address}});
+      await userProfile.updateOne({userId}, {$set: {address}});
     } else {
       new userProfile({
         userId,
