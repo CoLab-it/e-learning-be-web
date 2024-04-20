@@ -1,10 +1,12 @@
 /* eslint-disable valid-jsdoc */
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 
 const secretkey = process.env.SECRET_KEY;
 const User = require('../model/users');
 const Course = require('../model/courses');
+const userProfile = require('../model/userProfile');
 
 /**
  - Function to  create a new user in the database.
@@ -117,10 +119,58 @@ const getCourse = async (req, res) => {
   res.json({courses});
 };
 
-const getCourseDetails = async (req, res)=>{
-  const id= req.params.courseId;
+const getCourseDetails = async (req, res) => {
+  const id = req.params.courseId;
   const course = await Course.findById(id);
   res.json({course});
+};
+
+const getUserProfile = async (req, res) => {
+  const id = new mongoose.Types.ObjectId(req.token.userid);
+  const user = await User.aggregate([
+    {$match: {_id: id}},
+    {
+      $lookup: {
+        from: 'userprofiles',
+        localField: '_id',
+        foreignField: 'userId',
+        as: 'userProfile',
+      },
+    },
+  ]);
+  res.json({user});
+};
+
+const saveUserProfile = async (req, res) => {
+  try {
+    const userId = req.token.userid;
+    console.log(req.body);
+    const {username, email, number, address} = req.body;
+
+    await User.updateOne(
+        {_id: userId},
+        {$set: {name: username, email}},
+        {upsert: true},
+    );
+
+    const userProfileExists = await userProfile.exists({userId});
+
+    if (userProfileExists) {
+      await userProfile.updateOne({userId}, {$set: {number, address}});
+    } else {
+      new userProfile({
+        userId,
+        address,
+      }).save();
+    }
+
+    res.status(200).json({message: 'User profile saved successfully.'});
+  } catch (error) {
+    console.error('Error saving user profile:', error);
+    res
+        .status(500)
+        .json({message: 'Error saving user profile. Please try again later.'});
+  }
 };
 
 module.exports = {
@@ -128,4 +178,6 @@ module.exports = {
   signupuser,
   getCourse,
   getCourseDetails,
+  saveUserProfile,
+  getUserProfile,
 };
