@@ -115,34 +115,47 @@ const loginuser = async (req, res) => {
 };
 
 const getCourse = async (req, res) => {
-  const courses = await Course.find();
-  res.json({courses});
+  try {
+    const courses = await Course.find();
+    res.json({courses});
+  } catch (err) {
+    res.json({message: 'Error Occurred when getting courses', err});
+  }
 };
 
 const getCourseDetails = async (req, res) => {
-  const id = req.params.courseId;
-  const course = await Course.findById(id);
-  res.json({course});
+  try {
+    const id = req.params.courseId;
+    const course = await Course.findById(id);
+    res.json({course});
+  } catch (err) {
+    res.json({message: 'Error Occurred when getting course details', err});
+  }
 };
 
 const getUserProfile = async (req, res) => {
   const id = new mongoose.Types.ObjectId(req.token.userid);
-  const user = await User.aggregate([
-    {$match: {_id: id}},
-    {
-      $lookup: {
-        from: 'userprofiles',
-        localField: '_id',
-        foreignField: 'userId',
-        as: 'userProfile',
+  try {
+    const user = await User.aggregate([
+      {$match: {_id: id}},
+      {
+        $lookup: {
+          from: 'userprofiles',
+          localField: '_id',
+          foreignField: 'userId',
+          as: 'userProfile',
+        },
       },
-    },
-  ]);
-  res.json({user});
+    ]);
+    res.json({user});
+  } catch (err) {
+    res.json({message: 'Error Occurred when getting user profile', err});
+  }
 };
 
 const saveUserProfile = async (req, res) => {
   try {
+    const file = req.file.location;
     const userId = req.token.userid;
     console.log(req.body);
     const {username, email, number, address} = req.body;
@@ -156,11 +169,12 @@ const saveUserProfile = async (req, res) => {
     const userProfileExists = await userProfile.exists({userId});
 
     if (userProfileExists) {
-      await userProfile.updateOne({userId}, {$set: {address}});
+      await userProfile.updateOne({userId}, {$set: {address, imageUrl: file}});
     } else {
       new userProfile({
         userId,
         address,
+        imageUrl: file,
       }).save();
     }
 
