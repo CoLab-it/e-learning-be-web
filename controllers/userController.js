@@ -155,27 +155,41 @@ const getUserProfile = async (req, res) => {
 
 const saveUserProfile = async (req, res) => {
   try {
-    const file = req.file.location;
     const userId = req.token.userid;
-    console.log(req.body);
     const {username, email, number, address} = req.body;
 
     await User.updateOne(
         {_id: userId},
-        {$set: {name: username, email, phonenumber: number}},
+        {
+          $set: {
+            name: username,
+            email,
+            phonenumber: number,
+          },
+        },
         {upsert: true},
     );
 
-    const userProfileExists = await userProfile.exists({userId});
+    await userProfile.updateOne(
+        {userId},
+        {
+          $set: {
+            address,
+          },
+        },
+        {upsert: true},
+    );
 
-    if (userProfileExists) {
-      await userProfile.updateOne({userId}, {$set: {address, imageUrl: file}});
-    } else {
-      new userProfile({
-        userId,
-        address,
-        imageUrl: file,
-      }).save();
+    if (req.file) {
+      const file = req?.file?.location;
+      await userProfile.updateOne(
+          {userId},
+          {
+            $set: {
+              imageUrl: file,
+            },
+          },
+      );
     }
 
     res.status(200).json({message: 'User profile saved successfully.'});
