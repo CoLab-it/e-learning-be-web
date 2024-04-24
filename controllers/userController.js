@@ -115,53 +115,81 @@ const loginuser = async (req, res) => {
 };
 
 const getCourse = async (req, res) => {
-  const courses = await Course.find();
-  res.json({courses});
+  try {
+    const courses = await Course.find();
+    res.json({courses});
+  } catch (err) {
+    res.json({message: 'Error Occurred when getting courses', err});
+  }
 };
 
 const getCourseDetails = async (req, res) => {
-  const id = req.params.courseId;
-  const course = await Course.findById(id);
-  res.json({course});
+  try {
+    const id = req.params.courseId;
+    const course = await Course.findById(id);
+    res.json({course});
+  } catch (err) {
+    res.json({message: 'Error Occurred when getting course details', err});
+  }
 };
 
 const getUserProfile = async (req, res) => {
   const id = new mongoose.Types.ObjectId(req.token.userid);
-  const user = await User.aggregate([
-    {$match: {_id: id}},
-    {
-      $lookup: {
-        from: 'userprofiles',
-        localField: '_id',
-        foreignField: 'userId',
-        as: 'userProfile',
+  try {
+    const user = await User.aggregate([
+      {$match: {_id: id}},
+      {
+        $lookup: {
+          from: 'userprofiles',
+          localField: '_id',
+          foreignField: 'userId',
+          as: 'userProfile',
+        },
       },
-    },
-  ]);
-  res.json({user});
+    ]);
+    res.json({user});
+  } catch (err) {
+    res.json({message: 'Error Occurred when getting user profile', err});
+  }
 };
 
 const saveUserProfile = async (req, res) => {
   try {
     const userId = req.token.userid;
-    console.log(req.body);
     const {username, email, number, address} = req.body;
 
     await User.updateOne(
         {_id: userId},
-        {$set: {name: username, email, phonenumber: number}},
+        {
+          $set: {
+            name: username,
+            email,
+            phonenumber: number,
+          },
+        },
         {upsert: true},
     );
 
-    const userProfileExists = await userProfile.exists({userId});
+    await userProfile.updateOne(
+        {userId},
+        {
+          $set: {
+            address,
+          },
+        },
+        {upsert: true},
+    );
 
-    if (userProfileExists) {
-      await userProfile.updateOne({userId}, {$set: {address}});
-    } else {
-      new userProfile({
-        userId,
-        address,
-      }).save();
+    if (req.file) {
+      const file = req?.file?.location;
+      await userProfile.updateOne(
+          {userId},
+          {
+            $set: {
+              imageUrl: file,
+            },
+          },
+      );
     }
 
     res.status(200).json({message: 'User profile saved successfully.'});

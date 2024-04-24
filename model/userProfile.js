@@ -5,8 +5,8 @@ const userProfile = new mongoose.Schema({
     type: mongoose.Types.ObjectId,
     required: true,
   },
-  number: {
-    type: Number,
+  imageUrl: {
+    type: String,
   },
   address: {
     type: String,
