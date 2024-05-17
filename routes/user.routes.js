@@ -15,9 +15,15 @@ router.patch(
     tokenCheck,
     user.saveUserProfile,
 );
+router.patch(
+    '/addOrRemoveFromWishlist',
+    tokenCheck,
+    user.addOrRemoveFromWishlist,
+);
 
 router.get('/getCourses', tokenCheck, user.getCourse);
 router.get('/getSingleCourse/:courseId', tokenCheck, user.getCourseDetails);
 router.get('/getUserProfile', tokenCheck, user.getUserProfile);
+router.get('/getLikedCourses', tokenCheck, user.getLikedCourses);
 
 module.exports = router;

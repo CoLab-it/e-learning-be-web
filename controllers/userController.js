@@ -115,9 +115,11 @@ const loginuser = async (req, res) => {
 };
 
 const getCourse = async (req, res) => {
+  const userId = req.token.userid;
   try {
+    const user = await User.findById(userId);
     const courses = await Course.find();
-    res.json({courses});
+    res.json({courses, user});
   } catch (err) {
     res.json({message: 'Error Occurred when getting courses', err});
   }
@@ -201,6 +203,47 @@ const saveUserProfile = async (req, res) => {
   }
 };
 
+const addOrRemoveFromWishlist = async (req, res) => {
+  try {
+    const userId = req.token.userid;
+    const {id} = req.body;
+    const user = await User.findById(userId);
+    const courseIndex = user.likedCourse.indexOf(id);
+    if (courseIndex === -1) {
+      user.likedCourse.push(id);
+    } else {
+      user.likedCourse.splice(courseIndex, 1);
+    }
+    await user.save();
+    res.status(200).json({
+      message:
+        courseIndex === -1 ?
+          'Course added to wishlist' :
+          'Course removed from wishlist',
+      likedCourse: user.likedCourse,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({message: 'Internal Server Error'});
+  }
+};
+
+const getLikedCourses = async (req, res) => {
+  const userId = new mongoose.Types.ObjectId(req.token.userid);
+  const courses = await User.aggregate([
+    {$match: {_id: userId}},
+    {
+      $lookup: {
+        from: 'courses',
+        localField: 'likedCourse',
+        foreignField: '_id',
+        as: 'courses',
+      },
+    },
+  ]);
+  res.json({courses});
+};
+
 module.exports = {
   loginuser,
   signupuser,
@@ -208,4 +251,6 @@ module.exports = {
   getCourseDetails,
   saveUserProfile,
   getUserProfile,
+  addOrRemoveFromWishlist,
+  getLikedCourses,
 };
