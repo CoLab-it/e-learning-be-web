@@ -23,8 +23,11 @@ const userSchema = mongoose.Schema({
     default: 'user',
   },
   createdAt: {
-    type: Date,
     default: Date.now,
+    type: Date,
+  },
+  likedCourse: {
+    type: [mongoose.Types.ObjectId],
   },
 });
 
